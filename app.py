@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify, render_template
 import speech_recognition as sr
+import os
 
 app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return render_template('index.html')  # The HTML will be updated.
+    # The HTML will be rendered from the templates directory
+    return render_template('index.html')
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe_audio():
@@ -13,6 +15,7 @@ def transcribe_audio():
     audio_file = request.files['audio']
 
     try:
+        # Process the audio file
         with sr.AudioFile(audio_file) as source:
             audio = recognizer.record(source)
         text = recognizer.recognize_google(audio)
@@ -23,4 +26,6 @@ def transcribe_audio():
         return jsonify({"error": "Request error; please check your internet connection."})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Use the PORT environment variable for deployment, default to 5000
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
