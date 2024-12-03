@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech-to-Text App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+        }
+        h1 {
+            color: #4caf50;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        #uploadForm {
+            margin-bottom: 2rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-upload {
+            background-color: #1e1e1e;
+            color: #4caf50;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid #4caf50;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+        .file-upload:hover {
+            background-color: #4caf50;
+            color: #1e1e1e;
+        }
+        #transcribeButton {
+            background-color: #4caf50;
+            color: #121212;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #transcribeButton:hover {
+            background-color: #45a049;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.7);
+        }
+        #result {
+            margin-top: 2rem;
+            padding: 20px;
+            border-radius: 15px;
+            background: rgba(30, 30, 30, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            transition: all 0.3s ease;
+            min-height: 100px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+            color: #b0b0b0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            text-align: left;
+        }
+        #result.loading {
+            background: rgba(30, 30, 30, 0.9);
+            color: #4caf50;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+        .file-name {
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #4caf50;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .file-name.visible {
+            opacity: 1;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        #result::after {
+            content: '|';
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Speech-to-Text App</h1>
+        <form id="uploadForm">
+            <label for="audio" class="file-upload">
+                Choose an audio file (.wav)
+            </label>
+            <input type="file" name="audio" id="audio" accept="audio/*" required>
+            <div id="fileName" class="file-name"></div>
+            <button type="button" id="transcribeButton">Transcribe</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('transcribeButton').addEventListener('click', async function() {
+            const fileInput = document.getElementById('audio');
+            const resultDiv = document.getElementById('result');
+            
+            if (!fileInput.files[0]) {
+                resultDiv.textContent = "Please upload an audio file.";
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('audio', fileInput.files[0]);
+
+            resultDiv.textContent = "Transcribing...";
+            resultDiv.classList.add('loading');
+
+            try {
+                const response = await fetch('/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                resultDiv.classList.remove('loading');
+
+                if (data.transcription) {
+                    resultDiv.innerHTML = `${data.transcription}`;
+                } else {
+                    resultDiv.innerHTML = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                resultDiv.classList.remove('loading');
+                resultDiv.textContent = "An error occurred. Please try again.";
+            }
+        });
+
+        // Add animation for file upload
+        document.getElementById('audio').addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : '';
+            const fileNameDiv = document.getElementById('fileName');
+            fileNameDiv.textContent = fileName;
+            fileNameDiv.classList.add('visible');
+        });
+    </script>
+</body>
+</html>
+
